@@ -1,0 +1,35 @@
+# Docker Compose Override for Development
+# This file is automatically loaded by docker-compose for development
+# It provides development-specific overrides like hot reload and debug settings
+
+version: '3.8'
+
+services:
+  k-scan:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      # Development overrides
+      - DEBUG=true
+      - API_RELOAD=true
+    volumes:
+      # Mount source code for hot reload (development only)
+      - .:/app
+      # Override the data directory for development
+      - ./dev-data:/app/data
+    ports:
+      # Expose additional ports for debugging if needed
+      - "8000:8000"
+    command: >
+      sh -c "python -m src.main"
+    # Remove restart policy for development
+    restart: "no"
+    # Add labels for development
+    labels:
+      - "com.k-scan.environment=development"
+      - "com.k-scan.hot-reload=enabled"
+
+  # Development tools and services can be added here
+  # For example, a development database with sample data, 
+  # monitoring tools, etc. 
