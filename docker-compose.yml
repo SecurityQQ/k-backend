@@ -6,6 +6,10 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Python Configuration
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      
       # Required: OpenAI API Configuration
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL:-gpt-4o}
@@ -20,26 +24,17 @@ services:
       - VERSION=${VERSION:-1.0.0}
       - DEBUG=${DEBUG:-false}
       
-      # Security Settings
-      - MAX_SCAN_DEPTH=${MAX_SCAN_DEPTH:-3}
-      - MAX_PAGES_PER_SCAN=${MAX_PAGES_PER_SCAN:-100}
-      - SCAN_TIMEOUT=${SCAN_TIMEOUT:-300}
-      - RATE_LIMIT_DELAY=${RATE_LIMIT_DELAY:-1.0}
-      
-      # Component Settings
-      - ENABLE_SECRETS_SCAN=${ENABLE_SECRETS_SCAN:-true}
-      - ENABLE_VULNERABILITY_SCAN=${ENABLE_VULNERABILITY_SCAN:-true}
-      - ENABLE_HEADER_ANALYSIS=${ENABLE_HEADER_ANALYSIS:-true}
-      - ENABLE_CRAWLING=${ENABLE_CRAWLING:-true}
-      - ENABLE_REPORTING=${ENABLE_REPORTING:-true}
-      
       # Database Configuration
-      - DATABASE_URL=${DATABASE_URL:-data/k_scan.db}
+      - DATABASE_URL=${DATABASE_URL}
       
       # API Configuration
       - API_HOST=${API_HOST:-0.0.0.0}
       - API_PORT=${API_PORT:-8000}
       - API_RELOAD=${API_RELOAD:-false}
+
+      # Celery Configuration
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
     volumes:
       # Persist database and data files
       - k-scan-data:/app/data
@@ -55,16 +50,48 @@ services:
     networks:
       - k-scan-network
 
+  celery-worker:
+    build: .
+    command: celery -A src.celery worker -l info -P gevent
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      - DATABASE_URL=${DATABASE_URL}
+      - CELERY_BROKER_URL=${CELERY_BROKER_URL:-redis://redis:6379/0}
+      - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - BROWSERLESS_TOKEN=${BROWSERLESS_TOKEN:-}
+    volumes:
+      - .:/app
+    depends_on:
+      - k-scan
+      - redis
+    restart: unless-stopped
+    networks:
+      - k-scan-network
+
+  celery-flower:
+    image: mher/flower
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - FLOWER_PORT=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+    networks:
+      - k-scan-network
+
   # Optional: Redis for caching (uncomment if needed)
-  # redis:
-  #   image: redis:7-alpine
-  #   ports:
-  #     - "6379:6379"
-  #   volumes:
-  #     - redis-data:/data
-  #   restart: unless-stopped
-  #   networks:
-  #     - k-scan-network
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - k-scan-network
 
   # Optional: PostgreSQL database (uncomment if moving from SQLite)
   # postgres:
@@ -84,8 +111,8 @@ services:
 volumes:
   k-scan-data:
     driver: local
-  # redis-data:
-  #   driver: local
+  redis-data:
+    driver: local
   # postgres-data:
   #   driver: local
 

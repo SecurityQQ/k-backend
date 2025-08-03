@@ -1,1 +1,0 @@
-"""Scan Secrets Component - API Key and Credential Detection""" 

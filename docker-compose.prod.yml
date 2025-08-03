@@ -11,6 +11,10 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Python Configuration
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      
       # Production settings
       - DEBUG=false
       - API_RELOAD=false

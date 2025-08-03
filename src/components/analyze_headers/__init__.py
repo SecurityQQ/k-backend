@@ -1,1 +1,0 @@
-"""Analyze Headers Component - Security Configuration Analysis (Coming Soon)""" 

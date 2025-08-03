@@ -10,6 +10,10 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      # Python Configuration
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+      
       # Development overrides
       - DEBUG=true
       - API_RELOAD=true

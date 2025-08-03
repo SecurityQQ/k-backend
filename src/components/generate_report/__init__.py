@@ -1,1 +1,0 @@
-"""Generate Report Component - Intelligent Security Reporting (Coming Soon)""" 

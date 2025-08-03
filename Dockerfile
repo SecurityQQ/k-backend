@@ -1,12 +1,29 @@
 FROM python:3.11-slim
 
+# Prevent Python from writing pyc files to disc
+ENV PYTHONDONTWRITEBYTECODE=1
+# Prevent Python from buffering stdout and stderr
+ENV PYTHONUNBUFFERED=1
+
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies including gitleaks
 RUN apt-get update && apt-get install -y \
     curl \
+    wget \
+    libpq-dev \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
+
+# Install gitleaks
+RUN GITLEAKS_VERSION=$(wget -qO- https://api.github.com/repos/gitleaks/gitleaks/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/') \
+    && wget -O /tmp/gitleaks.tar.gz https://github.com/gitleaks/gitleaks/releases/download/${GITLEAKS_VERSION}/gitleaks_8.28.0_linux_x64.tar.gz \
+    && tar -xzf /tmp/gitleaks.tar.gz -C /tmp \
+    && mv /tmp/gitleaks /usr/local/bin/gitleaks \
+    && chmod +x /usr/local/bin/gitleaks \
+    && rm /tmp/gitleaks.tar.gz \
+    && gitleaks version
 
 # Copy requirements first for better caching
 COPY requirements.txt .

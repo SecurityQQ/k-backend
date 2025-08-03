@@ -1,7 +1,7 @@
 # K-Scan Security Audit System - Docker Management
 # Usage: make <command>
 
-.PHONY: help build up down logs shell test clean prod dev status backup
+.PHONY: help build up down logs shell test clean clean-py prod dev status backup
 
 # Default target
 help: ## Show this help message
@@ -92,6 +92,14 @@ clean: ## Clean up containers, images, and volumes
 	docker-compose down -v --remove-orphans
 	docker system prune -f
 	@echo "✅ Cleanup completed"
+
+clean-py: ## Clean up Python cache files and __pycache__ folders
+	@echo "🐍 Cleaning up Python cache files..."
+	@find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+	@find . -name "*.pyc" -delete 2>/dev/null || true
+	@find . -name "*.pyo" -delete 2>/dev/null || true
+	@find . -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
+	@echo "✅ Python cache cleanup completed"
 
 reset: clean ## Reset everything and start fresh
 	@echo "🔄 Resetting K-Scan environment..."
